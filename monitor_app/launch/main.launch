@@ -1,0 +1,33 @@
+<launch>
+  <arg name="face_cascade_name" default="$(find opencv3)/../OpenCV-3.3.1-dev/haarcascades/haarcascade_frontalface_alt.xml" doc="Face dtection cascade Filename" />
+  <arg name="eyes_cascade_name" default="$(find opencv3)/../OpenCV-3.3.1-dev/haarcascades/haarcascade_eye_tree_eyeglasses.xml" doc="Eye dtection cascade Filename" />
+
+  <node name="uvc_camera_node" pkg="uvc_camera" type="uvc_camera_node">
+    <param name="width" value="800" />
+    <param name="height" value="600" />
+  </node>
+  <node name="throttle" pkg="topic_tools" type="throttle" args="messages /image_raw 1.0"/>
+
+  <include file="$(find mongodb_store)/launch/mongodb_store.launch">
+    <arg name="db_path" value="mongodb" />
+    <!-- <arg name="db_path" value="$(optenv ROS_HOME /tmp)/mongodb" /> -->
+    <arg name="port" value="27017" />
+  </include>
+
+  <node name="face_detection" pkg="opencv_apps" type="face_detection"  >
+    <remap from="image" to="/image_raw_throttle" />
+    <param name="debug_view" value="false" />
+    <param name="queue_size" value="2" />
+    <param name="face_cascade_name" value="$(arg face_cascade_name)" />
+    <param name="eyes_cascade_name" value="$(arg eyes_cascade_name)" />
+  </node>
+
+  <!-- server -->
+  <include file="$(find roswww)/launch/roswww.launch" />
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <node pkg="web_video_server" type="web_video_server" name="web_video_server" />
+
+  <!-- app -->
+  <node name="checker" pkg="monitor_app" type="checker.py" args="messages /image_raw 1.0" output="screen"/>
+  <node name="data_server" pkg="monitor_app" type="data_server.py" args="messages /image_raw 1.0" output="screen"/>
+</launch>

@@ -1,0 +1,11 @@
+[Unit]
+After=networking.service
+Requires=networking.service
+
+[Service]
+User=admin
+ExecStart=/home/admin/ros/start_ros.sh
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
